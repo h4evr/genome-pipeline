@@ -6,7 +6,6 @@ import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import pt.fe.up.diogo.costa.job.Job;
 import pt.fe.up.diogo.costa.job.JobManager;
 import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
 import pt.fe.up.diogo.costa.runnable.SimpleRunnable;
@@ -22,75 +21,51 @@ public class JobManagerTest {
 		
 		RunnableForInputId<?> program1 = new SimpleRunnable();
 		program1.fromString("ping -n 1 127.0.0.1");
+		program1.setId(1);
 		
 		RunnableForInputId<?> program2 = new SimpleRunnable();
 		program2.fromString("ping -n 1 127.0.0.2");
+		program2.setId(2);
 		
 		RunnableForInputId<?> program3 = new SimpleRunnable();
 		program3.fromString("ping -n 1 127.0.0.3");
+		program3.setId(3);
 		
 		RunnableForInputId<?> program4 = new SimpleRunnable();
 		program4.fromString("ping -n 1 127.0.0.4");
+		program4.setId(4);
 		
-		manager.getRunnables().put(1, program1);
-		manager.getRunnables().put(2, program2);
-		manager.getRunnables().put(3, program3);
-		manager.getRunnables().put(4, program4);
+		manager.getRunnables().put(program1.getId(), program1);
+		manager.getRunnables().put(program2.getId(), program2);
+		manager.getRunnables().put(program3.getId(), program3);
+		manager.getRunnables().put(program4.getId(), program4);
+				
+		List<Integer> conditions;
 		
-		Job j1 = new Job();
-		j1.setId(1);
-		j1.setHost("127.0.0.1");
-		j1.setPort(9999);
-		j1.setRunnableId(1);
+		conditions = new ArrayList<Integer>(1);
+		conditions.add(program3.getId());
+		manager.getConditions().put(program2.getId(), conditions);
 		
-		Job j2 = new Job();
-		j2.setId(2);
-		j2.setHost("127.0.0.1");
-		j2.setPort(9999);
-		j2.setRunnableId(2);
+		conditions = new ArrayList<Integer>(2);
+		conditions.add(program1.getId());
+		conditions.add(program4.getId());
+		manager.getConditions().put(program3.getId(), conditions);
 		
-		Job j3 = new Job();
-		j3.setId(3);
-		j3.setHost("127.0.0.1");
-		j3.setPort(9999);
-		j3.setRunnableId(3);
-		
-		Job j4 = new Job();
-		j4.setId(4);
-		j4.setHost("127.0.0.1");
-		j4.setPort(9999);
-		j4.setRunnableId(4);
-		
-		manager.getJobs().add(j1);
-		manager.getJobs().add(j2);
-		manager.getJobs().add(j3);
-		manager.getJobs().add(j4);
-		
-		List<Job> jobs;
-		
-		jobs = new ArrayList<Job>(1);
-		jobs.add(j1);
-		manager.getConditions().put(j2, jobs);
-		
-		jobs = new ArrayList<Job>(2);
-		jobs.add(j1);
-		jobs.add(j4);
-		manager.getConditions().put(j3, jobs);
-		
-		jobs = new ArrayList<Job>(1);
-		jobs.add(j1);
-		manager.getConditions().put(j4, jobs);
+		conditions = new ArrayList<Integer>(1);
+		conditions.add(program1.getId());
+		manager.getConditions().put(program4.getId(), conditions);
 	}
 
 	@Test
 	public void test() {
 		List<Long> input_ids = new ArrayList<Long>();
 		
-		for(long j = 0; j < 10; ++j) {
+		for(long j = 0; j < 1; ++j) {
 			input_ids.add(j);
 		}
 		
-		manager.run(input_ids);
+		manager.setupJobs(input_ids);
+		manager.run(2);
 		
 		System.out.println(manager.toString());
 	}

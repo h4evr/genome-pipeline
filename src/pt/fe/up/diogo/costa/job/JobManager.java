@@ -1,6 +1,7 @@
 package pt.fe.up.diogo.costa.job;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,34 +10,22 @@ import pt.fe.up.diogo.costa.Result;
 import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
 
 public class JobManager implements IJobManager {
-	private HashMap<Long, Job> jobsById;
 	private List<Job> jobs;
-	private Map<Job, List<Job>> conditions;
-	private Map<Long, List<Long>> jobsByInputId;
+	private Map<Integer, List<Job>> jobsByRunnable;
+	private Map<Integer, List<Integer>> conditions;
 	private HashMap<Integer, RunnableForInputId<?>> runnables;
 	
 	public JobManager() {
-		jobsByInputId = new HashMap<Long, List<Long>>();
 	}
 	
 	@Override
 	public List<Job> getJobs() {
 		if(jobs == null) {
-			jobsById = new HashMap<Long, Job>();
 			jobs = new ArrayList<Job>();
+			jobsByRunnable = new HashMap<Integer, List<Job>>();
 		}
 		
 		return jobs;
-	}
-
-	@Override
-	public void setJobs(List<Job> jobs) {
-		this.jobs = jobs;
-		this.jobsById = new HashMap<Long, Job>();
-		
-		for(Job j : jobs) {
-			this.jobsById.put(j.getId(), j);
-		}
 	}
 
 	@Override
@@ -53,26 +42,20 @@ public class JobManager implements IJobManager {
 	}
 
 	@Override
-	public boolean hasJobRanOnInputId(Job job, long input_id) {
-		return jobsByInputId.containsKey(input_id) && 
-			   jobsByInputId.get(input_id) != null &&
-			   jobsByInputId.get(input_id).contains(job.getId());
+	public boolean hasJobRan(Job job) {
+		return job.getStatus().compareTo(JobStatus.RUNNING) > 0;
 	}
 
 	@Override
-	public Job getNextJobForInputId(long input_id) {
+	public Job getNextJob() {
 		Job nextJob = null;
 		
 		if(getJobs().size() == 0)
 			return null;
 		
-		if(!jobsByInputId.containsKey(input_id)) {
-			return getJobs().get(0);
-		}
-		
 		for(Job j : getJobs()) {
-			if(!hasJobRanOnInputId(j, input_id)) {
-				if(areConditionsMet(j, input_id)) {
+			if(!hasJobRan(j)) {
+				if(areConditionsMet(j)) {
 					nextJob = j;
 					break;
 				}
@@ -81,86 +64,121 @@ public class JobManager implements IJobManager {
 		
 		return nextJob;
 	}
-
-	@Override
-	public Map<Job, List<Job>> getConditions() {
-		if(conditions == null)
-			conditions = new HashMap<Job, List<Job>>();
-		return conditions;
+	
+	public boolean hasRunnableJobsFinished(Integer runnableId) {
+		if(runnableId == null || 
+		   !runnables.containsKey(runnableId)) {
+			return true;
+		}
+		
+		List<Job> runnableJobs = jobsByRunnable.get(runnableId);
+		
+		for(Job j : runnableJobs) {
+			if(!hasJobRan(j))
+				return false;
+		}
+		
+		return true;
 	}
 
 	@Override
-	public void run(List<Long> input_ids) {
+	public Map<Integer, List<Integer>> getConditions() {
+		if(conditions == null)
+			conditions = new HashMap<Integer, List<Integer>>();
+		return conditions;
+	}
+	
+	public boolean setupJobs(List<Long> input_ids) {
+		if(getRunnables().size() == 0)
+			return false;
+		
+		jobs = new ArrayList<Job>(input_ids.size() * getRunnables().size() + 1);
+		jobsByRunnable = new HashMap<Integer, List<Job>>();
+		
+		Long jobId = 0L;
+		
+		for(Integer runnableId : getRunnables().keySet()) {
+			List<Job> runnableJobs = new ArrayList<Job>(input_ids.size());
+			
+			for(Long inputId : input_ids) {
+				++jobId;
+				
+				Job j = new Job();
+				j.setId(jobId.longValue());
+				j.setRunnableId(runnableId);
+				j.setInputId(inputId);
+				
+				runnableJobs.add(j);
+				jobs.add(j);
+			}
+
+			jobsByRunnable.put(runnableId, runnableJobs);
+		}
+		
+		return true;
+	}
+
+	@Override
+	public void run(Integer runnableIdGoal) {
 		if(getJobs().size() == 0)
 			return;
 		
 		if(getRunnables().size() == 0)
 			return;
 		
-		Job goal = getJobs().get(getJobs().size() - 1);
-		
 		while(true) {
-			for(Long inputId : input_ids) {
-				Job nextJob = getNextJobForInputId(inputId);
-				
-				if(nextJob != null) {
-					nextJob.setStatus(JobStatus.RUNNING);
-					runJobForInputId(nextJob, inputId);
-					if(!JobStatus.ERROR.equals(nextJob.getStatus())) {
-						nextJob.setStatus(JobStatus.STOPPED);
-					}
-				}
-			}
+			Job nextJob = getNextJob();
 			
-			if(JobStatus.ERROR.equals(goal.getStatus())) {
-				break;
+			if(nextJob != null) {
+				runJob(nextJob);
 			} else {
-				boolean wasGoalReached = true;
-				
-				for(Long inputId : input_ids) {
-					if(!hasJobRanOnInputId(goal, inputId)) {
-						wasGoalReached = false;
-						break;
-					}
-				}
-				
-				if(wasGoalReached)
-					break;
+				break;
+			}
+
+			if(hasRunnableJobsFinished(runnableIdGoal)) {
+				break;
 			}
 		}
 	}
 	
 	@Override
-	public void runJobForInputId(Job j, long input_id) {
+	public void runJob(Job j) {
 		if(j.getRunnableId() == null ||
-		   !getRunnables().containsKey(j.getRunnableId())) 
+		   !getRunnables().containsKey(j.getRunnableId())) {
+			j.setStatus(JobStatus.ERROR);
 			return;
+		}
 		
-		System.out.println("Running job " + j.getId() + " for input id " + input_id);
+		System.out.println("Running job " + j.getId() + " for input id " + j.getInputId());
 		
 		RunnableForInputId<?> runnable = getRunnables().get(j.getRunnableId());
-		runnable.setInputId(input_id);
+		runnable.setInputId(j.getInputId());
 		
 		Result<?> res = runnable.run();
 		
 		if(res.hasError()) {
 			j.setStatus(JobStatus.ERROR);
 		} else {
-			if(!jobsByInputId.containsKey(input_id))
-				jobsByInputId.put(input_id, new ArrayList<Long>(getJobs().size()));
-			jobsByInputId.get(input_id).add(j.getId());
+			j.setStatus(JobStatus.SUCCESS);
 		}
+		
+		j.setLastRun(new Date());
 	}
 	
-	private boolean areConditionsMet(Job j, long input_id) {
-		if(!conditions.containsKey(j))
+	private boolean areConditionsMet(Job j) {
+		if(!conditions.containsKey(j.getRunnableId()))
 			return true;
 		
-		List<Job> previousJobs = conditions.get(j);
+		List<Integer> previousJobs = conditions.get(j.getRunnableId());
 		
-		for(Job pj : previousJobs) {
-			if(!hasJobRanOnInputId(pj, input_id)) {
-				return false;
+		for(Integer pj : previousJobs) {
+			List<Job> runnableJobs = jobsByRunnable.get(pj);
+			
+			for(Job job : runnableJobs) {
+				if(job.getInputId().equals(j.getInputId()) &&
+					!hasJobRan(job)) {
+					return false;
+				}
 			}
 		}
 		

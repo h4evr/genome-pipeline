@@ -7,17 +7,17 @@ import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
 
 public interface IJobManager {
 	public List<Job> getJobs();
-	public void setJobs(List<Job> jobs);
 	public List<Job> getJobsWithErrors();
 	
-	public boolean hasJobRanOnInputId(Job job, long input_id);
-	public Job getNextJobForInputId(long input_id);
+	public boolean hasJobRan(Job job);
+	public Job getNextJob();
 	
-	public Map<Job, List<Job>> getConditions();
+	public Map<Integer, List<Integer>> getConditions();
 	
-	public void runJobForInputId(Job j, long input_id);
+	public void runJob(Job j);
 	
-	public void run(List<Long> input_ids);
+	public boolean setupJobs(List<Long> input_ids);
+	public void run(Integer runnableIdGoal);
 	
 	public Map<Integer, RunnableForInputId<?>> getRunnables();
 }

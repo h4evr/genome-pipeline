@@ -7,6 +7,7 @@ public class Job {
 	protected String host;
 	protected long port;
 	protected Integer runnableId;
+	protected Long inputId;
 	protected Date lastRun;
 	protected JobStatus status;
 	protected JobDetail details;
@@ -71,6 +72,14 @@ public class Job {
 		this.details = details;
 	}
 	
+	public Long getInputId() {
+		return inputId;
+	}
+
+	public void setInputId(Long inputId) {
+		this.inputId = inputId;
+	}
+
 	@Override
 	public int hashCode() {
 		return (int)this.id;
