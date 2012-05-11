@@ -1,9 +1,6 @@
 package pt.fe.up.diogo.costa.job;
 
 import java.util.List;
-import java.util.Map;
-
-import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
 
 public interface IJobManager {
 	public List<Job> getJobs();
@@ -12,12 +9,11 @@ public interface IJobManager {
 	public boolean hasJobRan(Job job);
 	public Job getNextJob();
 	
-	public Map<Integer, List<Integer>> getConditions();
-	
-	public void runJob(Job j);
-	
+	public void setConfiguration(JobConfiguration config);
+	public JobConfiguration getConfiguration();
 	public boolean setupJobs(List<Long> input_ids);
-	public void run(Integer runnableIdGoal);
+	public void run();
 	
-	public Map<Integer, RunnableForInputId<?>> getRunnables();
+	public void requestNewBlockOfJobs(String threadName);	
+	public void finishedProcessingJobs(String threadName, List<Job> jobs);
 }

@@ -1,19 +1,27 @@
 package pt.fe.up.diogo.costa.job;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import pt.fe.up.diogo.costa.Result;
-import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class JobManager implements IJobManager {
 	private List<Job> jobs;
 	private Map<Integer, List<Job>> jobsByRunnable;
-	private Map<Integer, List<Integer>> conditions;
-	private HashMap<Integer, RunnableForInputId<?>> runnables;
+	private List<Long> inputIds;
+	
+	private HashMap<String, JobThread> threads;
+	private static final int numThreads = 3;
+	private static final int inputIdsPerThread = 10;
+	private final static int timeout = 250;
+	private int lastInputIdIndex = 0;
+	
+	private boolean hasFinished = false;
+	private Queue<String> requests = new ArrayBlockingQueue<String>(100);
+
+	private JobConfiguration configuration;
 	
 	public JobManager() {
 	}
@@ -55,7 +63,7 @@ public class JobManager implements IJobManager {
 		
 		for(Job j : getJobs()) {
 			if(!hasJobRan(j)) {
-				if(areConditionsMet(j)) {
+				if(JobUtils.areConditionsMet(configuration, getJobs(), j)) {
 					nextJob = j;
 					break;
 				}
@@ -67,7 +75,7 @@ public class JobManager implements IJobManager {
 	
 	public boolean hasRunnableJobsFinished(Integer runnableId) {
 		if(runnableId == null || 
-		   !runnables.containsKey(runnableId)) {
+		   !configuration.getRunnables().containsKey(runnableId)) {
 			return true;
 		}
 		
@@ -80,24 +88,23 @@ public class JobManager implements IJobManager {
 		
 		return true;
 	}
-
-	@Override
-	public Map<Integer, List<Integer>> getConditions() {
-		if(conditions == null)
-			conditions = new HashMap<Integer, List<Integer>>();
-		return conditions;
-	}
 	
+	@Override
 	public boolean setupJobs(List<Long> input_ids) {
-		if(getRunnables().size() == 0)
+		if(configuration == null)
 			return false;
 		
-		jobs = new ArrayList<Job>(input_ids.size() * getRunnables().size() + 1);
+		if(configuration.getRunnables().size() == 0)
+			return false;
+		
+		inputIds = input_ids;
+		lastInputIdIndex = 0;
+		jobs = new ArrayList<Job>(input_ids.size() * configuration.getRunnables().size() + 1);
 		jobsByRunnable = new HashMap<Integer, List<Job>>();
 		
 		Long jobId = 0L;
 		
-		for(Integer runnableId : getRunnables().keySet()) {
+		for(Integer runnableId : configuration.getRunnables().keySet()) {
 			List<Job> runnableJobs = new ArrayList<Job>(input_ids.size());
 			
 			for(Long inputId : input_ids) {
@@ -119,78 +126,113 @@ public class JobManager implements IJobManager {
 	}
 
 	@Override
-	public void run(Integer runnableIdGoal) {
+	public void run() {
 		if(getJobs().size() == 0)
 			return;
 		
-		if(getRunnables().size() == 0)
+		if(configuration == null)
 			return;
 		
-		while(true) {
-			Job nextJob = getNextJob();
-			
-			if(nextJob != null) {
-				runJob(nextJob);
-			} else {
-				break;
+		if(configuration.getRunnables().size() == 0)
+			return;
+				
+		if(configuration.getGoal() == null)
+			return;
+		
+		if(inputIds.size() == 0)
+			return;
+		
+		hasFinished = false;
+		requests.clear();
+		
+		threads = new HashMap<String, JobThread>();
+		
+		for(int nT = 0; nT < numThreads; ++nT) {
+			String threadName = "proc" + Integer.toString(nT);
+			threads.put(threadName, new JobThread(threadName, this));
+		}
+		
+		for(JobThread thread : threads.values()) {
+			new Thread(thread).start();
+		}
+		
+		synchronized(this) {
+			while(true) {
+				if(hasFinished) {
+					for(JobThread thread : threads.values()) {
+						thread.stop();
+					}
+					
+					break;
+				}
+				
+				System.out.println("[MASTER] - Checking for requests...");
+				
+				while(requests.size() > 0) {
+					String threadName = requests.poll();
+					List<Job> nextJobs = getNextBlockOfJobs();
+					if(nextJobs != null) {
+						System.out.println("[MASTER] - Send jobs to " + threadName);
+						threads.get(threadName).setNextJobs(nextJobs);
+					}
+				}
+				
+				try {
+					wait(timeout);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
+		}
+	}
+		
+	public synchronized void requestNewBlockOfJobs(String threadName) {		
+		requests.add(threadName);
+	}
+	
+	private List<Job> getNextBlockOfJobs() {
+		if(inputIds == null || inputIds.size() == 0 || lastInputIdIndex >= inputIds.size()) {
+			return null;
+		}
+		
+		int lastIndex = lastInputIdIndex + inputIdsPerThread;
+		if(lastIndex > inputIds.size())
+			lastIndex = inputIds.size();
+		
+		System.out.println("[MASTER] - nextInputIds : " + lastInputIdIndex + " - " + (lastIndex - 1));
+		
+		List<Long> nextInputIds = inputIds.subList(lastInputIdIndex, lastIndex);
+		lastInputIdIndex = lastIndex;
 
-			if(hasRunnableJobsFinished(runnableIdGoal)) {
-				break;
-			}
-		}
-	}
-	
-	@Override
-	public void runJob(Job j) {
-		if(j.getRunnableId() == null ||
-		   !getRunnables().containsKey(j.getRunnableId())) {
-			j.setStatus(JobStatus.ERROR);
-			return;
-		}
+		List<Job> nextJobs = new ArrayList<Job>(configuration.getRunnables().size() * nextInputIds.size());
 		
-		System.out.println("Running job " + j.getId() + " for input id " + j.getInputId());
-		
-		RunnableForInputId<?> runnable = getRunnables().get(j.getRunnableId());
-		runnable.setInputId(j.getInputId());
-		
-		Result<?> res = runnable.run();
-		
-		if(res.hasError()) {
-			j.setStatus(JobStatus.ERROR);
-		} else {
-			j.setStatus(JobStatus.SUCCESS);
-		}
-		
-		j.setLastRun(new Date());
-	}
-	
-	private boolean areConditionsMet(Job j) {
-		if(!conditions.containsKey(j.getRunnableId()))
-			return true;
-		
-		List<Integer> previousJobs = conditions.get(j.getRunnableId());
-		
-		for(Integer pj : previousJobs) {
-			List<Job> runnableJobs = jobsByRunnable.get(pj);
-			
-			for(Job job : runnableJobs) {
-				if(job.getInputId().equals(j.getInputId()) &&
-					!hasJobRan(job)) {
-					return false;
+		for(List<Job> runnableJobs : jobsByRunnable.values()) {
+			for(Job j : runnableJobs) {
+				if(nextInputIds.contains(j.getInputId())) {
+					nextJobs.add(j);
+					break;
 				}
 			}
 		}
 		
-		return true;
-	}
-
-	@Override
-	public Map<Integer, RunnableForInputId<?>> getRunnables() {
-		if(runnables == null)
-			runnables = new HashMap<Integer, RunnableForInputId<?>>();
+		if(nextJobs.size() == 0)
+			return null;
 		
-		return runnables;
+		return nextJobs;
+	}
+	
+	public synchronized void finishedProcessingJobs(String threadName, List<Job> js) {
+		System.out.println("[MASTER] - Received jobs from " + threadName);
+
+		hasFinished = hasRunnableJobsFinished(configuration.getGoal());
+	}
+	
+	public void setConfiguration(JobConfiguration config) {
+		this.configuration = config;
+	}
+	
+	public JobConfiguration getConfiguration() {
+		return this.configuration;
 	}
 	
 	@Override
