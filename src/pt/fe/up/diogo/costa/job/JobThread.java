@@ -24,11 +24,11 @@ public class JobThread implements Runnable {
 	public synchronized void setNextJobs(List<Job> jobs) {
 		this.jobs = jobs;
 	
-		if(this.jobs != null) {
-			System.out.println("[" + id + "] Got " + jobs.size() + " jobs.");
-		} else {
+		if(this.jobs == null) {
 			stop = true;
-		}
+		} /*else {
+			System.out.println("[" + id + "] Got " + jobs.size() + " jobs.");
+		}*/
 		
 		this.notify();
 	}
@@ -61,7 +61,7 @@ public class JobThread implements Runnable {
 					Job j = null;
 					
 					while((j = getNextJob()) != null) {
-						System.out.println("[" + id + "] Running job " + j.getId() + ", input id: " + j.getInputId());
+						//System.out.println("[" + id + "] Running job " + j.getId() + ", input id: " + j.getInputId());
 						runJob(j);
 					}
 					
@@ -80,7 +80,7 @@ public class JobThread implements Runnable {
 			return null;
 		
 		for(Job j : jobs) {
-			if(!jobManager.hasJobRan(j)) {
+			if(!JobUtils.hasJobRan(j)) {
 				if(JobUtils.areConditionsMet(configuration, jobs, j)) {
 					nextJob = j;
 					break;
@@ -98,7 +98,7 @@ public class JobThread implements Runnable {
 			return;
 		}
 		
-		System.out.println("Running job " + j.getId() + " for input id " + j.getInputId());
+		//System.out.println("Running job " + j.getId() + " for input id " + j.getInputId());
 		
 		RunnableForInputId<?> runnable = configuration.getRunnables().get(j.getRunnableId());
 		runnable.setInputId(j.getInputId());

@@ -13,9 +13,9 @@ public class JobManager implements IJobManager {
 	private List<Long> inputIds;
 	
 	private HashMap<String, JobThread> threads;
-	private static final int numThreads = 3;
-	private static final int inputIdsPerThread = 10;
-	private final static int timeout = 250;
+	private int numThreads = 3;
+	private int inputIdsPerThread = 1;
+	private final static int timeout = 500;
 	private int lastInputIdIndex = 0;
 	
 	private boolean hasFinished = false;
@@ -166,7 +166,7 @@ public class JobManager implements IJobManager {
 					break;
 				}
 				
-				System.out.println("[MASTER] - Checking for requests...");
+				//System.out.println("[MASTER] - Checking for requests...");
 				
 				while(requests.size() > 0) {
 					String threadName = requests.poll();
@@ -199,7 +199,7 @@ public class JobManager implements IJobManager {
 		if(lastIndex > inputIds.size())
 			lastIndex = inputIds.size();
 		
-		System.out.println("[MASTER] - nextInputIds : " + lastInputIdIndex + " - " + (lastIndex - 1));
+		//System.out.println("[MASTER] - nextInputIds : " + lastInputIdIndex + " - " + (lastIndex - 1));
 		
 		List<Long> nextInputIds = inputIds.subList(lastInputIdIndex, lastIndex);
 		lastInputIdIndex = lastIndex;
@@ -210,7 +210,6 @@ public class JobManager implements IJobManager {
 			for(Job j : runnableJobs) {
 				if(nextInputIds.contains(j.getInputId())) {
 					nextJobs.add(j);
-					break;
 				}
 			}
 		}
@@ -233,6 +232,22 @@ public class JobManager implements IJobManager {
 	
 	public JobConfiguration getConfiguration() {
 		return this.configuration;
+	}
+	
+	public int getNumThreads() {
+		return numThreads;
+	}
+
+	public void setNumThreads(int numThreads) {
+		this.numThreads = numThreads;
+	}
+
+	public int getInputIdsPerThread() {
+		return inputIdsPerThread;
+	}
+
+	public void setInputIdsPerThread(int inputIdsPerThread) {
+		this.inputIdsPerThread = inputIdsPerThread;
 	}
 	
 	@Override

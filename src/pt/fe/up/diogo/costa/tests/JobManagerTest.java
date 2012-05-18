@@ -61,13 +61,16 @@ public class JobManagerTest {
 		configuration.setGoal(2);
 		
 		manager.setConfiguration(configuration);
+		
+		manager.setInputIdsPerThread(10);
+		manager.setNumThreads(3);
 	}
 
 	@Test
 	public void test() {
 		List<Long> input_ids = new ArrayList<Long>();
 		
-		for(long j = 0; j < 1000; ++j) {
+		for(long j = 0; j < 3000; ++j) {
 			input_ids.add(j);
 		}
 		
