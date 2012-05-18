@@ -38,7 +38,7 @@ public class JobManagerTest {
 		program4.fromString("ping -n 1 127.0.0.4");
 		program4.setId(4);
 		
-		configuration.getRunnables().put(program1.getId(), program1);
+		configuration.getRunnables().put(program1 .getId(), program1);
 		configuration.getRunnables().put(program2.getId(), program2);
 		configuration.getRunnables().put(program3.getId(), program3);
 		configuration.getRunnables().put(program4.getId(), program4);
