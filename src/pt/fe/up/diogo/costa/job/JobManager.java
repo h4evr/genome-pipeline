@@ -15,7 +15,7 @@ public class JobManager implements IJobManager {
 	private HashMap<String, JobThread> threads;
 	private int numThreads = 3;
 	private int inputIdsPerThread = 1;
-	private final static int timeout = 500;
+	private final static int timeout = 200;
 	private int lastInputIdIndex = 0;
 	
 	private boolean hasFinished = false;
@@ -172,7 +172,7 @@ public class JobManager implements IJobManager {
 					String threadName = requests.poll();
 					List<Job> nextJobs = getNextBlockOfJobs();
 					if(nextJobs != null) {
-						System.out.println("[MASTER] - Send jobs to " + threadName);
+						//System.out.println("[MASTER] - Send jobs to " + threadName);
 						threads.get(threadName).setNextJobs(nextJobs);
 					}
 				}
@@ -221,7 +221,7 @@ public class JobManager implements IJobManager {
 	}
 	
 	public synchronized void finishedProcessingJobs(String threadName, List<Job> js) {
-		System.out.println("[MASTER] - Received jobs from " + threadName);
+		//System.out.println("[MASTER] - Received jobs from " + threadName);
 
 		hasFinished = hasRunnableJobsFinished(configuration.getGoal());
 	}
