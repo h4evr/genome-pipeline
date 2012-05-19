@@ -1,16 +1,21 @@
 package pt.fe.up.diogo.costa;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import pt.fe.up.diogo.costa.config.IniReader;
+import pt.fe.up.diogo.costa.data.JobDao;
+import pt.fe.up.diogo.costa.db.Database;
 import pt.fe.up.diogo.costa.job.JobConfiguration;
 import pt.fe.up.diogo.costa.job.JobManager;
 import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
 import pt.fe.up.diogo.costa.runnable.SimpleRunnable;
 
 public class Pipeline {	
+	private static final boolean deleteAllJobsOnStart = false;
+	
 	public static void main(String[] args) {
 		JobConfiguration configuration = new JobConfiguration();
 		JobManager manager = new JobManager();
@@ -61,9 +66,19 @@ public class Pipeline {
 			input_ids.add(j);
 		}
 		
-		manager.setupJobs(input_ids);
-		manager.run();
+		try {
+			if(deleteAllJobsOnStart)
+				JobDao.getInstance().deleteAllJobs();
+			
+			manager.setupJobs(input_ids);
+			
+			manager.run();
+			
+			System.out.println(manager.toString());			
+		} catch(SQLException e) {
+			e.printStackTrace();
+		}
 		
-		System.out.println(manager.toString());
+		Database.close();
 	}
 }

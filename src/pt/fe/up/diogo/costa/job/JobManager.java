@@ -1,11 +1,14 @@
 package pt.fe.up.diogo.costa.job;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+
+import pt.fe.up.diogo.costa.data.JobDao;
 
 public class JobManager implements IJobManager {
 	private List<Job> jobs;
@@ -102,24 +105,27 @@ public class JobManager implements IJobManager {
 		jobs = new ArrayList<Job>(input_ids.size() * configuration.getRunnables().size() + 1);
 		jobsByRunnable = new HashMap<Integer, List<Job>>();
 		
-		Long jobId = 0L;
-		
-		for(Integer runnableId : configuration.getRunnables().keySet()) {
-			List<Job> runnableJobs = new ArrayList<Job>(input_ids.size());
-			
-			for(Long inputId : input_ids) {
-				++jobId;
+		try {
+			for(Integer runnableId : configuration.getRunnables().keySet()) {
+				List<Job> runnableJobs = new ArrayList<Job>(input_ids.size());
 				
-				Job j = new Job();
-				j.setId(jobId.longValue());
-				j.setRunnableId(runnableId);
-				j.setInputId(inputId);
-				
-				runnableJobs.add(j);
-				jobs.add(j);
+				for(Long inputId : input_ids) {
+					Job j = new Job();
+					
+					j.setRunnableId(runnableId);
+					j.setInputId(inputId);
+					
+					j = JobDao.getInstance().createOrUpdate(j);
+					
+					runnableJobs.add(j);
+					jobs.add(j);
+				}
+	
+				jobsByRunnable.put(runnableId, runnableJobs);
 			}
-
-			jobsByRunnable.put(runnableId, runnableJobs);
+		} catch(SQLException e) {
+			e.printStackTrace();
+			return false;
 		}
 		
 		return true;
