@@ -4,10 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Chunk implements IRegion {
+	private int id;
 	private long startPosition;
 	private long endPosition;
 	private String seq;
 
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+	
 	public long getStartPosition() {
 		return startPosition;
 	}
