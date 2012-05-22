@@ -10,11 +10,11 @@ import pt.fe.up.diogo.costa.data.JobDao;
 import pt.fe.up.diogo.costa.db.Database;
 import pt.fe.up.diogo.costa.job.JobConfiguration;
 import pt.fe.up.diogo.costa.job.JobManager;
+import pt.fe.up.diogo.costa.runnable.RunnableFactory;
 import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
-import pt.fe.up.diogo.costa.runnable.SimpleRunnable;
 
 public class Pipeline {	
-	private static final boolean deleteAllJobsOnStart = false;
+	private static final boolean deleteAllJobsOnStart = true;
 	
 	public static void main(String[] args) {
 		JobConfiguration configuration = new JobConfiguration();
@@ -32,11 +32,17 @@ public class Pipeline {
 		for(String runnableName : runnableSection.values()) {
 			Map<String, String> runnableInfo = conf.get(runnableName);
 			
-			RunnableForInputId<?> runnable = new SimpleRunnable();
-			runnable.setId(Integer.parseInt(runnableInfo.get("id")));
-			runnable.fromString(runnableInfo.get("program"));
+			RunnableForInputId<?> runnable = RunnableFactory.buildRunnable(RunnableFactory.Type.fromName(runnableInfo.get("module")));
 			
-			configuration.getRunnables().put(runnable.getId(), runnable);
+			if(runnable != null) {
+				runnable.setId(Integer.parseInt(runnableInfo.get("id")));
+				runnable.fromString(runnableInfo.get("program"));
+				
+				configuration.getRunnables().put(runnable.getId(), runnable);
+			} else {
+				System.err.println("Runnable module not recognized: " + runnableInfo.get("module"));
+				return;
+			}
 		}
 		
 		Map<String, String> conditionsSection = conf.get("conditions");
