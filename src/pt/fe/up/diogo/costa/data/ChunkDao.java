@@ -12,7 +12,7 @@ import pt.fe.up.diogo.costa.utils.StringUtils;
 public class ChunkDao {
 	private static ChunkDao instance = null;
 	
-	public ChunkDao getInstance() {
+	public static ChunkDao getInstance() {
 		if(instance == null)
 			instance = new ChunkDao();
 		return instance;
@@ -34,7 +34,7 @@ public class ChunkDao {
 	 		j.setId(rs.getInt(1));
 	 		j.setSequence(StringUtils.decodeRLE(rs.getString(2)));
 	 		j.setStartPosition(rs.getLong(3));
-	 		j.setEndPosition(rs.getLong(3));
+	 		j.setEndPosition(rs.getLong(4));
 	 	}
 	 	
 	 	rs.close();
@@ -86,6 +86,7 @@ public class ChunkDao {
 		PreparedStatement ps;
 		
 		ps = conn.prepareStatement("DELETE FROM sequence WHERE sequence_id = ?");
+		ps.setInt(1, id);
 				
 		return ps.executeUpdate() > 0;
 	}

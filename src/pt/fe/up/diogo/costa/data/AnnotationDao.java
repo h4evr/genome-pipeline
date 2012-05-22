@@ -13,20 +13,20 @@ import pt.fe.up.diogo.costa.db.Database;
 public class AnnotationDao {
 	private static AnnotationDao instance = null;
 	
-	public AnnotationDao getInstance() {
+	public static AnnotationDao getInstance() {
 		if(instance == null)
 			instance = new AnnotationDao();
 		return instance;
 	}
 	
-	public Annotation[] getAnnotations(Chunk j) throws SQLException {
+	public Annotation[] getAnnotations(int chunkId) throws SQLException {
 		List<Annotation> res;
 		
 		Connection conn = Database.getConnection();
 		PreparedStatement ps = 
 				conn.prepareStatement("SELECT annotation_id, sequence_id, start, end, label, content " +
 									  "FROM annotation WHERE sequence_id = ?");
-		ps.setInt(1, j.getId());
+		ps.setInt(1, chunkId);
 		
 	 	ResultSet rs = ps.executeQuery();
 	 	
@@ -45,7 +45,7 @@ public class AnnotationDao {
 	 	
 	 	rs.close();
 	 	
-		return (Annotation[])res.toArray();
+		return (Annotation[])res.toArray(new Annotation[res.size()]);
 	}
 	
 	public boolean saveAnnotation(Annotation j) throws SQLException {
@@ -95,6 +95,7 @@ public class AnnotationDao {
 		PreparedStatement ps;
 		
 		ps = conn.prepareStatement("DELETE FROM annotation WHERE annotation_id = ?");
+		ps.setInt(1, id);
 		
 		return ps.executeUpdate() > 0;
 	}
