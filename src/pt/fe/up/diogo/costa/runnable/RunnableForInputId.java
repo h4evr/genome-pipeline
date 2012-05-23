@@ -1,23 +1,23 @@
 package pt.fe.up.diogo.costa.runnable;
 
 public abstract class RunnableForInputId<T> implements IRunnable<T> {
-	protected long input_id;
+	protected long jobId;
 	protected int id;
 	
-	public RunnableForInputId(long input_id) {
-		this.input_id = input_id;
+	public RunnableForInputId(long jobId) {
+		this.jobId = jobId;
 	}
 	
 	public RunnableForInputId() {
-		input_id = -1L;
+		jobId = -1L;
 	}
 	
-	public long getInputId() {
-		return input_id;
+	public long getJobId() {
+		return jobId;
 	}
 
-	public void setInputId(long input_id) {
-		this.input_id = input_id;
+	public void setJobId(long jobId) {
+		this.jobId = jobId;
 	}
 	
 	@Override

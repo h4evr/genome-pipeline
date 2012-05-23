@@ -11,6 +11,9 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import pt.fe.up.diogo.costa.Result;
+import pt.fe.up.diogo.costa.data.AnnotationDao;
+import pt.fe.up.diogo.costa.data.JobDao;
+import pt.fe.up.diogo.costa.utils.ScriptingUtils;
 
 public class ScriptingRunnable extends RunnableForInputId<Object>  {
 	private String program;
@@ -45,12 +48,15 @@ public class ScriptingRunnable extends RunnableForInputId<Object>  {
 		ScriptEngine js = manager.getEngineByName("JavaScript");
 		
 		js.put("self", this);
+		js.put("jobDao", JobDao.getInstance());
+		js.put("annotationDao", AnnotationDao.getInstance());
+		js.put("ScriptingUtils", ScriptingUtils.class);
 		
 		InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(getProgram());
 		
 		if(stream == null) {
 			try {
-			stream = new FileInputStream(getProgram());
+				stream = new FileInputStream(getProgram());
 			} catch(FileNotFoundException e) {
 				return new Result<Object>(e);
 			}

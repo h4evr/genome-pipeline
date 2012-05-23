@@ -101,7 +101,7 @@ public class JobThread implements Runnable {
 		//System.out.println("Running job " + j.getId() + " for input id " + j.getInputId());
 		
 		RunnableForInputId<?> runnable = configuration.getRunnables().get(j.getRunnableId());
-		runnable.setInputId(j.getInputId());
+		runnable.setJobId(j.getId());
 		
 		Result<?> res = runnable.run();
 		

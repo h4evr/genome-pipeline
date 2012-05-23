@@ -37,7 +37,7 @@ public class RunnableTest {
 		RunnableForInputId<Object> runnable = new ScriptingRunnable();
 				
 		runnable.setProgram("runnables/ping.js");
-		runnable.setInputId(100L);
+		runnable.setJobId(1221L);
 
 		Result<Object> res = runnable.run();
 		
