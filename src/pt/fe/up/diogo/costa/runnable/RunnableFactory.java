@@ -3,7 +3,8 @@ package pt.fe.up.diogo.costa.runnable;
 public abstract class RunnableFactory {
 	public static enum Type {
 		NONE ("None"),
-		SIMPLE_RUNNABLE ("SimpleRunnable");
+		SIMPLE_RUNNABLE ("SimpleRunnable"),
+		SCRIPTING_RUNNABLE ("ScriptingRunnable");
 		
 		private String name;
 		
@@ -32,6 +33,8 @@ public abstract class RunnableFactory {
 		case SIMPLE_RUNNABLE:
 			runnable = new SimpleRunnable();
 			break;
+		case SCRIPTING_RUNNABLE:
+			runnable = new ScriptingRunnable();
 		default:
 			runnable = null;
 		}

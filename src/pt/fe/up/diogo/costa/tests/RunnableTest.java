@@ -1,12 +1,14 @@
 package pt.fe.up.diogo.costa.tests;
 
-import junit.framework.Assert;
+import static org.junit.Assert.*;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import pt.fe.up.diogo.costa.Result;
 import pt.fe.up.diogo.costa.runnable.IRunnable;
+import pt.fe.up.diogo.costa.runnable.RunnableForInputId;
+import pt.fe.up.diogo.costa.runnable.ScriptingRunnable;
 import pt.fe.up.diogo.costa.runnable.SimpleRunnable;
 
 
@@ -21,12 +23,30 @@ public class RunnableTest {
 	public void testRunnable() {
 		IRunnable<String> runnable = new SimpleRunnable();
 		
-		Assert.assertTrue(runnable.fromString("ping -n 1 127.0.0.1"));
+		assertTrue(runnable.fromString("ping -n 1 127.0.0.1"));
 		
 		Result<String> res = runnable.run();
 		
-		Assert.assertFalse(res.hasError());
+		assertFalse(res.hasError());
 		
 		System.out.println(res.getValue());
+	}
+	
+	@Test
+	public void testScriptingRunnable() {
+		RunnableForInputId<Object> runnable = new ScriptingRunnable();
+				
+		runnable.setProgram("runnables/ping.js");
+		runnable.setInputId(100L);
+
+		Result<Object> res = runnable.run();
+		
+		if(res.hasError()) {
+			res.getError().printStackTrace();
+			fail();
+		}
+
+		assertNotNull(res.getValue());
+		System.out.println(res.getValue().toString());
 	}
 }
