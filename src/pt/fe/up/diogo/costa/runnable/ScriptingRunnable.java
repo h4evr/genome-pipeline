@@ -61,6 +61,7 @@ public class ScriptingRunnable extends RunnableForInputId<Object>  {
 			try {
 				stream = new FileInputStream(getProgram());
 			} catch(FileNotFoundException e) {
+				e.printStackTrace();
 				return new Result<Object>(e);
 			}
 		}
@@ -69,13 +70,15 @@ public class ScriptingRunnable extends RunnableForInputId<Object>  {
 			InputStreamReader reader = new InputStreamReader(stream);
 			return new Result<Object>(js.eval(reader));
 		} catch(ScriptException e) {
+			e.printStackTrace();
 			return new Result<Object>(e);
 		}
 	}
 
 	@Override
 	public boolean fromString(String cmd) {
-		return false;
+		setProgram(cmd);
+		return true;
 	}
 	
 }
