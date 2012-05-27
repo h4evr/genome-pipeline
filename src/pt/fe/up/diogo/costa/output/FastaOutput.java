@@ -12,7 +12,7 @@ public class FastaOutput implements IOutput {
 		StringBuilder b = new StringBuilder();
 		
 		
-		b.append(">").append(s.getId());
+		b.append(">").append(s.getName());
 		
 		if(s.getAttributes().size() > 0) {
 			b.append(" ");

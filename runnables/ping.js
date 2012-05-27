@@ -9,7 +9,14 @@ function run() {
 		return "Couldn't fetch job!";
 	}
 	
-	var cmd = utils.executeProgram("ping", ["-c", "1", "127.0.0." + job.getInputId().toString()]);
+	var seq = sequenceDao.getSequenceById(job.getInputId()); 
+	var chunks = seq.getChunks();
+	
+	for(var i = 0; i < chunks.size(); ++i) {
+		out.println(i.getSequence());
+	}
+	
+	//var cmd = utils.executeProgram("ping", ["-c", "1", "127.0.0." + job.getInputId().toString()]);
 	
 	if(cmd.hasError()) {
 		cmd.getException().printStackTrace();

@@ -6,8 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 import pt.fe.up.diogo.costa.config.IniReader;
+import pt.fe.up.diogo.costa.data.SequenceDao;
 import pt.fe.up.diogo.costa.data.JobDao;
+import pt.fe.up.diogo.costa.data.Sequence;
 import pt.fe.up.diogo.costa.db.Database;
+import pt.fe.up.diogo.costa.input.FastaInput;
+import pt.fe.up.diogo.costa.input.IInput;
 import pt.fe.up.diogo.costa.job.JobConfiguration;
 import pt.fe.up.diogo.costa.job.JobManager;
 import pt.fe.up.diogo.costa.runnable.RunnableFactory;
@@ -66,20 +70,49 @@ public class Pipeline {
 		manager.setInputIdsPerThread(10);
 		manager.setNumThreads(3);
 		
-		List<Long> input_ids = new ArrayList<Long>();
+		Map<String, String> setupSection = conf.get("setup");
 		
-		for(long j = 0; j < 30; ++j) {
-			input_ids.add(j);
+		String fileToLoad = setupSection.get("sequences");
+		
+		if(fileToLoad == null) {
+			System.err.println("No sequences file specified in the SETUP section.");
+			return;
 		}
 		
+		IInput in = new FastaInput();
+		
+		if(!in.open(fileToLoad)) {
+			System.err.println("File not found: " + fileToLoad);
+			return;
+		}
+		
+		List<Long> input_ids = new ArrayList<Long>();
+		
+		Sequence s = null;
 		try {
-			if(deleteAllJobsOnStart)
-				JobDao.getInstance().deleteAllJobs();
+			while((s = in.readNextSequence()) != null) {
+				System.out.println("Loading sequence " + s.getName() + "...");
+				SequenceDao.getInstance().saveSequence(s);
+				input_ids.add(new Long(s.getId()));
+			}
 			
+			in.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			if(deleteAllJobsOnStart) {
+				JobDao.getInstance().deleteAllJobs();
+			}
+			
+			System.out.println("Setting up jobs...");
 			manager.setupJobs(input_ids);
 			
+			System.out.println("Starting analysis!");
 			manager.run();
 			
+			System.out.println("Finished!!");
 			System.out.println(manager.toString());			
 		} catch(SQLException e) {
 			e.printStackTrace();

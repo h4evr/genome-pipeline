@@ -115,7 +115,7 @@ public class JobManager implements IJobManager {
 					j.setRunnableId(runnableId);
 					j.setInputId(inputId);
 					
-					j = JobDao.getInstance().createOrUpdate(j);
+					JobDao.getInstance().saveJob(j);
 					
 					runnableJobs.add(j);
 					jobs.add(j);

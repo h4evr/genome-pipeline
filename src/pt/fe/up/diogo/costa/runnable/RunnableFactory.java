@@ -35,6 +35,7 @@ public abstract class RunnableFactory {
 			break;
 		case SCRIPTING_RUNNABLE:
 			runnable = new ScriptingRunnable();
+			break;
 		default:
 			runnable = null;
 		}

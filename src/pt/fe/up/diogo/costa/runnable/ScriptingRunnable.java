@@ -13,6 +13,7 @@ import javax.script.ScriptException;
 import pt.fe.up.diogo.costa.Result;
 import pt.fe.up.diogo.costa.data.AnnotationDao;
 import pt.fe.up.diogo.costa.data.JobDao;
+import pt.fe.up.diogo.costa.data.SequenceDao;
 import pt.fe.up.diogo.costa.utils.ScriptingUtils;
 
 public class ScriptingRunnable extends RunnableForInputId<Object>  {
@@ -49,6 +50,8 @@ public class ScriptingRunnable extends RunnableForInputId<Object>  {
 		
 		js.put("self", this);
 		js.put("jobDao", JobDao.getInstance());
+		js.put("sequenceDao", SequenceDao.getInstance());
+		js.put("out", System.out);
 		js.put("annotationDao", AnnotationDao.getInstance());
 		js.put("ScriptingUtils", ScriptingUtils.class);
 		
